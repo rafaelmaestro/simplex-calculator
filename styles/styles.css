@@ -1,0 +1,82 @@
+.navbar-brand {
+    font-weight: bold;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    /* Height of the footer */
+    background: transparent
+}
+
+footer p {
+    color: rgb(0, 0, 0);
+    text-align: center;
+    padding: 20px 0;
+}
+
+input.form-control {
+
+    display: inline;
+    justify-content: center;
+    width: 70px;
+    margin-top: 15px;
+}
+
+#funcObj {
+    position: relative;
+}
+
+
+
+
+#rests {
+    position: relative;
+    display: inline;
+    justify-content: center;
+    width: max-content;
+    max-width: max-content;
+    margin-bottom: 50px;
+    margin-top: 50px;
+}
+
+#rests select {
+    display: inline;
+    justify-content: center;
+    width: max-content;
+    margin-top: 15px;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+.form-select {
+    height: 60px;
+}
+
+button {
+    margin-top: 15px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+
+.same-width {
+    width: 100%;
+}
+
+.row {
+    position: relative;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+#rest {
+    position: relative;
+    margin-bottom: 50px;
+    margin-top: 50px;
+}
