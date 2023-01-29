@@ -2,14 +2,15 @@ const Simplex = require('../test/utils.js')
 
 
 const main = () => {
+	testInteira1()
 	testZéMariaAparecida()
-	testDegenerada()
-	testSolucaoNegativa()
-	testSolucaoIlimitada()
-	testSolucaoInexistente()
-	testVariavelArtificial1()
-	testVariavelArtificial2()
-	testVariavelArtificial3()
+	// testDegenerada()
+	// testSolucaoNegativa()
+	// testSolucaoIlimitada()
+	// testSolucaoInexistente()
+	// testVariavelArtificial1()
+	// testVariavelArtificial2()
+	// testVariavelArtificial3()
 }
 
 function parseTestResult(result) {
@@ -17,6 +18,19 @@ function parseTestResult(result) {
 	const S = `Z*: ${result.S != 0 ? result.S.toFixed(2) : null}`;
 	const MSG = result.MSG;
 	return { xB: xB, S, MSG }
+}
+
+function testInteira1() {
+	console.log(`process -> ${testInteira1.name}`)
+	let simplex = new Simplex()
+	simplex.setFn(['max', 2, 1])
+	simplex.setRestrictions([
+		[2, 5, '<=', 17],
+		[3, 2, '<=', 10],
+	])
+	simplex.setMode('int')
+	console.log(parseTestResult(simplex.solve()))
+	console.log('\n\n')
 }
 
 function testZéMariaAparecida() { // OK 
@@ -27,7 +41,9 @@ function testZéMariaAparecida() { // OK
 		[24, 16, '<=', 96],
 		[5, 10, '<=', 45]
 	])
+	simplex.setMode('int')
 	console.log(parseTestResult(simplex.solve()))
+	// console.log(simplex.solve())
 	console.log('\n\n')
 }
 
@@ -40,6 +56,7 @@ function testDegenerada() { // OK
 		[1, 3, '<=', 18],
 		[1, 1, '<=', 8],
 	])
+	simplex.setMode('int')
 	console.log(parseTestResult(simplex.solve()))
 	console.log('\n\n')
 }
@@ -53,6 +70,7 @@ function testSolucaoNegativa() { //NOK
 		[-1, 3, '<=', 2],
 		[0, 1, '>=', 0],
 	])
+	simplex.setMode('int')
 	console.log(parseTestResult(simplex.solve()))
 	console.log('\n\n')
 }
@@ -65,6 +83,7 @@ function testSolucaoIlimitada() { // OK
 		[1, -2, '<=', 2],
 		[-2, 1, '<=', 2],
 	])
+	simplex.setMode('int')
 	console.log(parseTestResult(simplex.solve()))
 	console.log('\n\n')
 }
@@ -77,6 +96,7 @@ function testSolucaoInexistente() { // NOK
 		[2, -2, '>=', 4],
 		[-2, 2, '>=', 4],
 	])
+	simplex.setMode('int')
 	console.log(parseTestResult(simplex.solve()))
 	console.log('\n\n')
 }
@@ -91,6 +111,7 @@ function testVariavelArtificial1() {
 		[0, 1, '>=', 1],
 		[0, 1, '<=', 2]
 	])
+	simplex.setMode('int')
 	console.log(parseTestResult(simplex.solve()))
 	console.log('\n\n')
 }
@@ -106,6 +127,7 @@ function testVariavelArtificial2() {
 		[0, 1, '>=', 1],
 		[0, 1, '<=', 2]
 	])
+	simplex.setMode('int')
 	console.log(parseTestResult(simplex.solve()))
 	console.log('\n\n')
 }
@@ -119,6 +141,7 @@ function testVariavelArtificial3() {
 		[1, 2, '>=', 1],
 		[1, 1, '<=', 5],
 	])
+	simplex.setMode('int')
 	console.log(parseTestResult(simplex.solve()))
 	console.log('\n\n')
 }

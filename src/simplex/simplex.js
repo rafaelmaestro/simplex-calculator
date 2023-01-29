@@ -10,7 +10,12 @@ const modal = document.getElementById('modal-body-result')
 
 function parseResult(result) {
 	let xB = result.xB.map((x, i) => `x${result.B[i] + 1} = ${x.toFixed(2)}`);
-	const S = `${result.S != 0 ? result.S.toFixed(2) : null}`;
+	let S = result.S;
+	if (S % 1 !== 0) {
+		S = S.toFixed(2);
+	}
+	S < 0 ? S = S * -1 : S;
+	S = `${S != 0 ? S : null}`;
 	const MSG = result.MSG;
 	return { xB: xB, S, MSG }
 }
@@ -18,9 +23,11 @@ function parseResult(result) {
 function submite() {
 	const fn = getFn()
 	const restrictions = getRestrictions()
+	const mode = getMode()
 	let simplex = new Simplex()
 	simplex.setFn([...fn])
 	simplex.setRestrictions([...restrictions])
+	simplex.setMode(mode)
 	const simplexSolve = parseResult(simplex.solve())
 	modal.innerHTML = ''
 	const content = `<b>x*: [${simplexSolve.xB}]</b><br><b>z*[${simplexSolve.S}]</b><br>`
@@ -30,6 +37,9 @@ function submite() {
 	}
 }
 
+function getMode() {
+	return flexCheckDefault.checked ? 'int' : 'float'
+}
 function getOp() {
 	return document.getElementById('op').value
 }
@@ -102,6 +112,7 @@ class Simplex {
 	constructor() {
 		this.costs = []
 		this.restrictions = []
+		this.originalVars = []
 	}
 
 
@@ -120,7 +131,7 @@ class Simplex {
 		const j = this.costs.length - this.restrictions.length
 		this.artificialCosts = this.costs.map((x, i) => i < j ? 0 : 1)
 
-		const solver = new SimplexSteps(this.mat, this.b, this.artificialCosts, this.B, this.N)
+		const solver = new SimplexSteps(this.mat, this.b, this.artificialCosts, this.B, this.N, this.mode, this.restrictions, this.originalVars)
 		const { B, N } = solver.exec()
 		this.B = B
 		this.N = N.filter(x => x < j)
@@ -138,8 +149,8 @@ class Simplex {
 			this.setInitialBandN()
 		}
 
-		const solver = new SimplexSteps(this.mat, this.b, this.costs, this.B, this.N)
-		const response = solver.exec()
+		let solver = new SimplexSteps(this.mat, this.b, this.costs, this.B, this.N, this.mode, this.restrictions, this.originalVars)
+		let response = solver.exec()
 		return response
 	}
 
@@ -155,9 +166,14 @@ class Simplex {
 
 	setFn(fn) {
 		this.fnType = fn.splice(0, 1)[0]
-		fn.forEach(x => this.costs.push(x))
+		fn.forEach(x => this.costs.push(x) && this.originalVars.push(x))
 		this.fnSize = this.costs.length
 	}
+
+	setMode(mode) {
+		this.mode = mode
+	}
+
 
 	addRestriction(fn) {
 		// X é igual a b, portanto b não pode ser negativo.
@@ -240,14 +256,19 @@ class Simplex {
 }
 
 class SimplexSteps {
-	constructor(mat, b, costs, B, N) {
+	constructor(mat, b, costs, B, N, mode, restrictions, originalVars) {
 		this.b = b
 		this.mat = mat
 		this.costs = costs
 		this.B = B
 		this.N = N
+		this.S = 0
 		this.MSG = []
 		this.ERRORS = []
+		this.mode = mode
+		this.isOptimal = false
+		this.restrictions = restrictions
+		this.originalVars = originalVars
 	}
 
 	exec() {
@@ -258,7 +279,14 @@ class SimplexSteps {
 				this.calcRelativeCosts()
 				this.whoEntersInB()
 				if (this.isGreatSolution()) {
-					break
+					if (this.mode === 'float') {
+						this.isOptimal = true
+						break
+					}
+					this.addGomoryCut()
+					if (this.isOptimal) {
+						break
+					}
 				}
 				this.calcSimplexDir()
 				if (this.whoLeft()) {
@@ -272,11 +300,13 @@ class SimplexSteps {
 				N: this.N,
 				B: this.B,
 				S: this.S,
-				MSG: this.MSG
+				MSG: this.MSG,
+				isOptimal: this.isOptimal
 			}
 		} catch (error) {
 			this.ERRORS.push(error.message)
 			this.MSG.push(`Problema sem solução! Revise seu modelo.`)
+			console.log(this.ERRORS)
 			return {
 				xB: [],
 				N: [],
@@ -286,6 +316,66 @@ class SimplexSteps {
 				ERRORS: this.ERRORS
 			}
 		}
+	}
+
+
+	addGomoryCut() {
+		// todo: obter os valores da linha da matriz correspondente ao xB nao inteiro.
+		// todo: separar as partes inteiras das fracionarias.
+		// todo: descartar os inteiros e construir nova restrição >=
+		// todo: adicionar nova restrição ao modelo.
+		// todo: executar novamente o simplex.
+
+		let newValues = []
+		this.restrictions.forEach((restriction, index) => {
+			let value = this.xB[index]
+			if (!this.isInteger(value)) {
+				newValues.push({
+					vars: restriction.vars,
+					value: value
+				})
+			}
+		})
+		if (newValues.length > 0) {
+			this.xB.forEach((value, index) => {
+				let fraction = value - Math.floor(value);
+				let roundedValue = fraction <= 0.5 ? Math.floor(value) : Math.ceil(value);
+				if (roundedValue !== value) {
+					let restrictionIndex = newValues.findIndex(restriction => restriction.value === value)
+					if (restrictionIndex !== -1) {
+						newValues.splice(restrictionIndex, 1)
+					}
+					this.xB[index] = roundedValue;
+				}
+			})
+			this.S = 0
+			this.B.forEach((b, i) => {
+				if (this.originalVars[b] !== undefined) {
+					console.log(this.originalVars[b])
+					console.log(this.xB[i])
+					this.S += this.originalVars[b] * this.xB[i];
+				}
+			});
+			this.S % 1 === 0 ? this.S = this.S : this.S = this.S.toFixed(2)
+			// if (this.S !== undefined) {
+			//     let fraction = this.S - Math.floor(this.S);
+			//     let roundedS = fraction < 0.5 ? Math.floor(this.S) : Math.ceil(this.S);
+			//     this.S = roundedS;
+			// }
+		}
+		this.isOptimal = true
+	}
+	isInteger(number) {
+		return (number ^ 0) === number
+	}
+	separateIntegerFraction(num) {
+		var intPart = Math.ceil(num);
+		var fracPart = intPart - num;
+		if (fracPart === 1) {
+			intPart--;
+			fracPart = 0;
+		}
+		return [intPart, fracPart];
 	}
 
 	// Passo 1
@@ -426,14 +516,12 @@ function array_fill(i, n, v) {
 const gauss = (A, x = []) => {
 	var i, k, j;
 
-	// Just make a single matrix
 	for (i = 0; i < A.length; i++) {
 		A[i].push(x[i]);
 	}
 	var n = A.length;
 
 	for (i = 0; i < n; i++) {
-		// Search for maximum in this column
 		var maxEl = abs(A[i][i]),
 			maxRow = i;
 		for (k = i + 1; k < n; k++) {
@@ -444,14 +532,12 @@ const gauss = (A, x = []) => {
 		}
 
 
-		// Swap maximum row with current row (column by column)
 		for (k = i; k < n + 1; k++) {
 			var tmp = A[maxRow][k];
 			A[maxRow][k] = A[i][k];
 			A[i][k] = tmp;
 		}
 
-		// Make all rows below this one 0 in current column
 		for (k = i + 1; k < n; k++) {
 			var c = -A[k][i] / A[i][i];
 			for (j = i; j < n + 1; j++) {
@@ -464,7 +550,6 @@ const gauss = (A, x = []) => {
 		}
 	}
 
-	// Solve equation Ax=b for an upper triangular matrix A
 	x = array_fill(0, n, 0);
 	for (i = n - 1; i > -1; i--) {
 		x[i] = A[i][n] / A[i][i];
