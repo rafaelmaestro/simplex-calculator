@@ -7,6 +7,8 @@ Calculadora Método Simplex utilizando Electron.JS desenvolvida para disciplina 
 
 + Para inicializar a calculadora, execute o arquivo .exe localizado na pasta Calculadora-*.
 
++ Execute o comando npm install
+
 + Para gerar outro executavel: npx electron-packager . Calculadora  --platform=win32 --arch=x64 --overwrite
 
 + Para executar o código fonte utilize o comando npm install na pasta raiz e logo após npm start.
